@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thursday PM Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f12;
+    --surface: #17171c;
+    --surface2: #1e1e26;
+    --border: #2a2a35;
+    --red: #ff4d4d;
+    --red-soft: #ff4d4d22;
+    --amber: #ffb347;
+    --amber-soft: #ffb34722;
+    --green: #4dffb4;
+    --green-soft: #4dffb422;
+    --blue: #5b8dee;
+    --blue-soft: #5b8dee22;
+    --text: #e8e8f0;
+    --text-muted: #6b6b80;
+    --text-dim: #9999aa;
+    --accent: #c8a96e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* CONFIG BANNER */
+  .config-banner {
+    background: #c8a96e15;
+    border-bottom: 1px solid #c8a96e44;
+    padding: 10px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .config-banner input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid #c8a96e44;
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    outline: none;
+  }
+  .config-banner input:focus { border-color: var(--accent); }
+  .config-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    color: #0f0f12;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .config-banner.connected { background: #4dffb410; border-color: #4dffb444; color: var(--green); }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace; font-size: 16px;
+    color: #0f0f12; font-weight: 500;
+  }
+  .logo-text { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 700; }
+  .logo-sub { font-size: 11px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .week-badge {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px;
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted);
+  }
+  .nav-tabs { display: flex; gap: 2px; background: var(--surface2); border-radius: 8px; padding: 3px; }
+  .nav-tab {
+    padding: 6px 16px; border-radius: 6px; border: none;
+    background: transparent; color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer;
+    transition: all 0.15s; font-weight: 500;
+  }
+  .nav-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+
+  /* LAYOUT */
+  .main { padding: 28px 32px; max-width: 1400px; margin: 0 auto; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* LOADING */
+  .loading-bar {
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    width: 0%;
+    transition: width 0.3s;
+    position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+  }
+  .loading-bar.active { width: 70%; }
+  .loading-bar.done { width: 100%; opacity: 0; transition: width 0.3s, opacity 0.3s 0.3s; }
+
+  /* STATS */
+  .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 20px;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .stat-card.total::before { background: var(--blue); }
+  .stat-card.red::before { background: var(--red); }
+  .stat-card.amber::before { background: var(--amber); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.pending::before { background: var(--text-muted); }
+  .stat-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .stat-number { font-family: 'Fraunces', serif; font-size: 36px; font-weight: 700; line-height: 1; }
+  .stat-card.total .stat-number { color: var(--blue); }
+  .stat-card.red .stat-number { color: var(--red); }
+  .stat-card.amber .stat-number { color: var(--amber); }
+  .stat-card.green .stat-number { color: var(--green); }
+  .stat-card.pending .stat-number { color: var(--text-muted); }
+  .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* SECTION */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; margin-top: 28px; }
+  .section-title { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+  .section-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* PROJECT CARDS */
+  .project-grid { display: flex; flex-direction: column; gap: 8px; }
+  .project-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 20px;
+    display: grid; grid-template-columns: 28px 220px 80px 1fr 160px 140px 100px;
+    align-items: center; gap: 16px;
+    transition: border-color 0.15s, transform 0.1s;
+    cursor: pointer; position: relative; overflow: hidden;
+  }
+  .project-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 3px 0 0 3px; }
+  .project-card.red::before { background: var(--red); }
+  .project-card.amber::before { background: var(--amber); }
+  .project-card.green::before { background: var(--green); }
+  .project-card:hover { border-color: #3a3a48; transform: translateY(-1px); }
+
+  .rag-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .rag-dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .rag-dot.amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .rag-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+  .project-name { font-weight: 600; font-size: 14px; }
+  .project-pm { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-family: 'DM Mono', monospace; }
+
+  .track-badge { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.5px; padding: 3px 8px; border-radius: 4px; text-align: center; font-weight: 500; }
+  .track-badge.ERP { background: #5b8dee22; color: var(--blue); }
+  .track-badge.HCM { background: #c8a96e22; color: var(--accent); }
+  .track-badge.Student { background: #4dffb422; color: var(--green); }
+  .track-badge.SFP { background: #b47fff22; color: #b47fff; }
+
+  .milestone-text { font-size: 13px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .needs-decision { display: inline-flex; align-items: center; gap: 5px; background: #ff4d4d15; border: 1px solid #ff4d4d33; color: var(--red); font-size: 10px; font-family: 'DM Mono', monospace; padding: 3px 8px; border-radius: 4px; }
+  .no-action { font-size: 11px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+  .expand-icon { font-size: 10px; color: var(--text-muted); text-align: right; transition: transform 0.2s; }
+  .project-card.expanded .expand-icon { transform: rotate(180deg); }
+
+  /* EXPANDED */
+  .card-detail { display: none; background: var(--surface2); border: 1px solid var(--border); border-top: none; border-radius: 0 0 12px 12px; padding: 20px 24px; margin-top: -8px; }
+  .card-detail.open { display: block; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .detail-section label { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); display: block; margin-bottom: 6px; }
+  .detail-section p { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+  .detail-section p.highlight { color: var(--red); font-weight: 500; }
+  .ragu-note { margin-top: 14px; padding: 12px 14px; background: #c8a96e0d; border: 1px solid #c8a96e33; border-radius: 8px; display: flex; gap: 10px; align-items: flex-start; }
+  .ragu-note-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--accent); white-space: nowrap; margin-top: 1px; }
+  .ragu-note input { background: transparent; border: none; color: var(--text-dim); font-family: 'DM Sans', sans-serif; font-size: 13px; flex: 1; outline: none; width: 100%; }
+
+  /* AGENDA */
+  .agenda-container { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .agenda-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .agenda-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 700; }
+  .agenda-meta { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); }
+  .agenda-item { padding: 16px 24px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 56px 24px 1fr auto; align-items: center; gap: 14px; }
+  .agenda-item:last-child { border-bottom: none; }
+  .agenda-time { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--accent); }
+  .agenda-mins { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); text-align: right; }
+  .agenda-project { font-size: 14px; font-weight: 500; }
+  .agenda-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* FORM */
+  .form-wrap { max-width: 720px; margin: 0 auto; }
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
+  .form-title { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+  .form-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { margin-bottom: 18px; }
+  .form-label { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); display: block; margin-bottom: 7px; }
+  .form-control { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none; transition: border-color 0.15s; }
+  .form-control:focus { border-color: var(--accent); }
+  textarea.form-control { resize: vertical; min-height: 72px; }
+  select.form-control { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b6b80' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+
+  .rag-selector { display: flex; gap: 8px; }
+  .rag-btn { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); font-family: 'DM Mono', monospace; font-size: 12px; cursor: pointer; text-align: center; transition: all 0.15s; font-weight: 500; }
+  .rag-btn.selected-red { background: var(--red-soft); border-color: var(--red); color: var(--red); }
+  .rag-btn.selected-amber { background: var(--amber-soft); border-color: var(--amber); color: var(--amber); }
+  .rag-btn.selected-green { background: var(--green-soft); border-color: var(--green); color: var(--green); }
+
+  .decision-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; user-select: none; }
+  .toggle-box { width: 18px; height: 18px; border: 1.5px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
+  .toggle-box.checked { background: var(--red); border-color: var(--red); }
+  .toggle-box.checked::after { content: '✓'; color: white; font-size: 11px; font-weight: 700; }
+
+  .submit-btn { width: 100%; padding: 14px; background: var(--accent); border: none; border-radius: 10px; color: #0f0f12; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: opacity 0.15s, transform 0.1s; }
+  .submit-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* PENDING */
+  .pending-grid { display: flex; flex-direction: column; gap: 6px; }
+  .pending-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
+  .not-submitted { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); background: var(--surface2); border: 1px solid var(--border); padding: 2px 8px; border-radius: 4px; }
+
+  /* FILTER */
+  .filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-btn { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); font-family: 'DM Mono', monospace; font-size: 10px; cursor: pointer; transition: all 0.15s; }
+  .filter-btn.active { background: var(--surface2); color: var(--text); border-color: #3a3a48; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 28px; right: 28px; padding: 12px 20px; border-radius: 10px; font-family: 'DM Mono', monospace; font-size: 12px; display: none; z-index: 999; }
+  .toast.success { background: var(--green-soft); border: 1px solid var(--green); color: var(--green); }
+  .toast.error { background: var(--red-soft); border: 1px solid var(--red); color: var(--red); }
+
+  /* EMPTY */
+  .empty-state { text-align: center; padding: 40px; color: var(--text-muted); font-size: 13px; }
+  .empty-state .icon { font-size: 32px; margin-bottom: 12px; }
+
+  .refresh-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 12px; color: var(--text-muted); font-size: 11px; font-family: 'DM Mono', monospace; cursor: pointer; transition: all 0.15s; }
+  .refresh-btn:hover { color: var(--text); border-color: #3a3a48; }
+</style>
+</head>
+<body>
+<div class="loading-bar" id="loadingBar"></div>
+
+<!-- CONFIG BANNER -->
+<div class="config-banner" id="configBanner">
+  <span style="white-space:nowrap;font-family:'DM Mono',monospace;font-size:11px;">⚙ Apps Script URL:</span>
+  <input type="text" id="scriptUrl" placeholder="Paste your Google Apps Script Web App URL here..." />
+  <button class="config-btn" onclick="saveConfig()">Connect →</button>
+</div>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-mark">R</div>
+    <div>
+      <div class="logo-text">Command Center</div>
+      <div class="logo-sub">Thursday PM Review</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="week-badge" id="weekBadge">—</div>
+    <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchView('dashboard', this)">Dashboard</button>
+      <button class="nav-tab" onclick="switchView('agenda', this)">Agenda</button>
+      <button class="nav-tab" onclick="switchView('submit', this)">Submit Update</button>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- DASHBOARD -->
+  <div class="view active" id="view-dashboard">
+    <div class="stats-row">
+      <div class="stat-card total"><div class="stat-label">Total Projects</div><div class="stat-number" id="statTotal">—</div><div class="stat-sub" id="statSub">connect sheet to load</div></div>
+      <div class="stat-card red"><div class="stat-label">🔴 Critical</div><div class="stat-number" id="statRed">—</div><div class="stat-sub">needs attention</div></div>
+      <div class="stat-card amber"><div class="stat-label">🟡 At Risk</div><div class="stat-number" id="statAmber">—</div><div class="stat-sub">monitor closely</div></div>
+      <div class="stat-card green"><div class="stat-label">🟢 On Track</div><div class="stat-number" id="statGreen">—</div><div class="stat-sub">no action needed</div></div>
+      <div class="stat-card pending"><div class="stat-label">⏳ No Updates</div><div class="stat-number" id="statEmpty">—</div><div class="stat-sub">this week</div></div>
+    </div>
+
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="filterProjects('all', this)">All Tracks</button>
+      <button class="filter-btn" onclick="filterProjects('ERP', this)">ERP</button>
+      <button class="filter-btn" onclick="filterProjects('HCM', this)">HCM</button>
+      <button class="filter-btn" onclick="filterProjects('Student', this)">Student</button>
+      <button class="filter-btn" onclick="filterProjects('SFP', this)">SFP</button>
+      <button class="filter-btn" onclick="filterProjects('decision', this)">⚡ Needs Decision</button>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title"><span class="section-dot" style="background:var(--red)"></span>Critical & At-Risk Projects</div>
+    </div>
+    <div class="project-grid" id="projectGridHigh"></div>
+
+    <div class="section-header" style="margin-top:24px">
+      <div class="section-title"><span class="section-dot" style="background:var(--green)"></span>On Track — Consent Agenda</div>
+    </div>
+    <div class="project-grid" id="projectGridGreen"></div>
+  </div>
+
+  <!-- AGENDA -->
+  <div class="view" id="view-agenda">
+    <div class="agenda-container">
+      <div class="agenda-header">
+        <div><div class="agenda-title">Thursday Call Agenda</div><div class="agenda-meta" id="agendaDate">Auto-generated from live submissions</div></div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted)">Total: <span id="agendaTotal">—</span> mins</div>
+      </div>
+      <div id="agendaList"></div>
+    </div>
+  </div>
+
+  <!-- SUBMIT -->
+  <div class="view" id="view-submit">
+    <div class="form-wrap">
+      <div class="form-card">
+        <div class="form-title">Submit Weekly Update</div>
+        <div class="form-subtitle">Due by Wednesday 6 PM · Thursday call is for decisions & escalations only</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Your Name / PM</label>
+            <input class="form-control" id="fPM" placeholder="e.g. Sindhya R." type="text">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Project Name</label>
+            <input class="form-control" id="fProject" placeholder="e.g. HPU ERP Phase 2" type="text">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Track</label>
+            <select class="form-control" id="fTrack">
+              <option value="">Select track...</option>
+              <option>ERP</option><option>HCM</option><option>Student</option><option>SFP</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Customer</label>
+            <input class="form-control" id="fCustomer" placeholder="e.g. HighPoint University" type="text">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Overall RAG Status</label>
+          <div class="rag-selector">
+            <button class="rag-btn" onclick="selectRag('red', this)">🔴 Red — Critical</button>
+            <button class="rag-btn" onclick="selectRag('amber', this)">🟡 Amber — At Risk</button>
+            <button class="rag-btn" onclick="selectRag('green', this)">🟢 Green — On Track</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Current Milestone / This Week's Focus</label>
+          <input class="form-control" id="fMilestone" placeholder="e.g. Pre-implementation workshops complete, SAFI mapping in review" type="text">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Risks / Blockers</label>
+            <textarea class="form-control" id="fRisk" placeholder="What's slowing the project or could derail it?"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Accomplishments This Week</label>
+            <textarea class="form-control" id="fAccomplishments" placeholder="Key wins and completions..."></textarea>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Needs Ragu's Decision or Escalation?</label>
+          <div class="decision-toggle" onclick="toggleDecision(this)">
+            <div class="toggle-box" id="decisionBox"></div>
+            <span style="font-size:13px;color:var(--text-dim)">Yes — I need a decision or action on Thursday's call</span>
+          </div>
+        </div>
+        <div class="form-group" id="decisionDetailGroup" style="display:none">
+          <label class="form-label">Describe the Decision Needed</label>
+          <textarea class="form-control" id="fDecision" placeholder="What specific decision or action do you need from Ragu?"></textarea>
+        </div>
+        <button class="submit-btn" id="submitBtn" onclick="submitUpdate()">Submit Update →</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let projects = [];
+  let selectedRag = "";
+  let decisionChecked = false;
+  let currentFilter = "all";
+  let SCRIPT_URL = localStorage.getItem('pm_script_url') || "";
+
+  // ── INIT ─────────────────────────────────────────────────────────────
+  function init() {
+    const now = new Date();
+    document.getElementById('weekBadge').textContent = 'Week of ' + now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    document.getElementById('agendaDate').textContent = `Thursday, ${now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`;
+
+    if (SCRIPT_URL) {
+      document.getElementById('scriptUrl').value = SCRIPT_URL;
+      setConnected();
+      loadData();
+    }
+  }
+
+  function saveConfig() {
+    const url = document.getElementById('scriptUrl').value.trim();
+    if (!url || !url.startsWith('https://script.google.com')) {
+      showToast('Please paste a valid Apps Script URL', 'error');
+      return;
+    }
+    SCRIPT_URL = url;
+    localStorage.setItem('pm_script_url', SCRIPT_URL);
+    setConnected();
+    loadData();
+  }
+
+  function setConnected() {
+    const banner = document.getElementById('configBanner');
+    banner.classList.add('connected');
+    banner.innerHTML = `<span style="font-family:'DM Mono',monospace;font-size:11px;">✓ Connected to Google Sheets</span>
+      <span style="font-family:'DM Mono',monospace;font-size:10px;opacity:0.7;margin-left:8px;">${SCRIPT_URL.substring(0, 60)}...</span>
+      <button class="config-btn" style="background:transparent;border:1px solid #4dffb444;color:var(--green);" onclick="resetConfig()">Change</button>`;
+  }
+
+  function resetConfig() {
+    SCRIPT_URL = "";
+    localStorage.removeItem('pm_script_url');
+    location.reload();
+  }
+
+  // ── LOADING ───────────────────────────────────────────────────────────
+  function setLoading(on) {
+    const bar = document.getElementById('loadingBar');
+    if (on) { bar.className = 'loading-bar active'; }
+    else { bar.className = 'loading-bar done'; setTimeout(() => bar.className = 'loading-bar', 600); }
+  }
+
+  // ── FETCH DATA ────────────────────────────────────────────────────────
+  async function loadData() {
+    if (!SCRIPT_URL) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${SCRIPT_URL}?action=fetch`, { method: 'GET' });
+      const json = await res.json();
+      if (json.success) {
+        projects = json.data || [];
+        renderAll();
+      } else {
+        showToast('Error loading data: ' + json.error, 'error');
+      }
+    } catch (err) {
+      showToast('Could not reach Google Sheets. Check your URL.', 'error');
+    }
+    setLoading(false);
+  }
+
+  // ── SUBMIT ────────────────────────────────────────────────────────────
+  async function submitUpdate() {
+    if (!SCRIPT_URL) { showToast('Connect your Google Sheet first', 'error'); return; }
+
+    const pm = document.getElementById('fPM').value.trim();
+    const project = document.getElementById('fProject').value.trim();
+    const track = document.getElementById('fTrack').value;
+    const customer = document.getElementById('fCustomer').value.trim();
+    const milestone = document.getElementById('fMilestone').value.trim();
+    const risk = document.getElementById('fRisk').value.trim();
+    const accomplishments = document.getElementById('fAccomplishments').value.trim();
+    const decisionText = document.getElementById('fDecision').value.trim();
+
+    if (!pm || !project || !track || !selectedRag || !milestone) {
+      showToast('Please fill all required fields and select a RAG status', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+    setLoading(true);
+
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'submit', pm, project, track,
+          customer: customer || '—', rag: selectedRag,
+          milestone, risk: risk || 'None reported',
+          accomplishments: accomplishments || 'Not specified',
+          needsDecision: decisionChecked,
+          decisionText: decisionText || ''
+        })
+      });
+      const json = await res.json();
+      if (json.success) {
+        clearForm();
+        showToast('✓ Update submitted successfully', 'success');
+        await loadData();
+        switchView('dashboard', document.querySelectorAll('.nav-tab')[0]);
+      } else {
+        showToast('Submission failed: ' + json.error, 'error');
+      }
+    } catch (err) {
+      showToast('Could not submit. Check your connection.', 'error');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Submit Update →';
+    setLoading(false);
+  }
+
+  // ── SAVE RAGU NOTE ────────────────────────────────────────────────────
+  async function saveNote(rowId, note) {
+    if (!SCRIPT_URL) return;
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'note', rowId, note })
+    });
+  }
+
+  // ── RENDER ────────────────────────────────────────────────────────────
+  function renderAll() {
+    renderStats();
+    renderProjects(currentFilter);
+    renderAgenda();
+  }
+
+  function renderStats() {
+    const red = projects.filter(p => p.rag === 'red').length;
+    const amber = projects.filter(p => p.rag === 'amber').length;
+    const green = projects.filter(p => p.rag === 'green').length;
+    document.getElementById('statTotal').textContent = projects.length;
+    document.getElementById('statSub').textContent = 'this week';
+    document.getElementById('statRed').textContent = red;
+    document.getElementById('statAmber').textContent = amber;
+    document.getElementById('statGreen').textContent = green;
+    document.getElementById('statEmpty').textContent = projects.length === 0 ? '—' : '✓';
+  }
+
+  function renderProjects(filter) {
+    let filtered = [...projects];
+    if (filter === 'decision') filtered = filtered.filter(p => p.needsDecision);
+    else if (filter !== 'all') filtered = filtered.filter(p => p.track === filter);
+
+    const high = filtered.filter(p => p.rag === 'red' || p.rag === 'amber')
+      .sort((a, b) => a.rag === 'red' ? -1 : 1);
+    const green = filtered.filter(p => p.rag === 'green');
+
+    const highHTML = high.length ? high.map(p => projectCardHTML(p)).join('') :
+      `<div class="empty-state"><div class="icon">✅</div>No critical or at-risk projects this week</div>`;
+    const greenHTML = green.length ? green.map(p => projectCardHTML(p)).join('') :
+      `<div class="empty-state"><div class="icon">📋</div>No green projects submitted yet</div>`;
+
+    document.getElementById('projectGridHigh').innerHTML = highHTML;
+    document.getElementById('projectGridGreen').innerHTML = greenHTML;
+  }
+
+  function projectCardHTML(p) {
+    return `
+      <div>
+        <div class="project-card ${p.rag}" onclick="toggleExpand(${p.id})" id="card-${p.id}">
+          <div class="rag-dot ${p.rag}"></div>
+          <div><div class="project-name">${p.project}</div><div class="project-pm">${p.pm}</div></div>
+          <span class="track-badge ${p.track}">${p.track}</span>
+          <div class="milestone-text">${p.milestone}</div>
+          <div style="font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace">${p.customer}</div>
+          <div>${p.needsDecision ? `<span class="needs-decision">⚡ DECISION</span>` : `<span class="no-action">no action</span>`}</div>
+          <div class="expand-icon">▾ details</div>
+        </div>
+        <div class="card-detail" id="detail-${p.id}">
+          <div class="detail-grid">
+            <div class="detail-section"><label>Risks / Blockers</label><p class="${p.rag === 'red' ? 'highlight' : ''}">${p.risk}</p></div>
+            <div class="detail-section"><label>Accomplishments</label><p>${p.accomplishments}</p></div>
+            <div class="detail-section"><label>Submitted</label><p>${p.submittedAt}</p>
+              ${p.needsDecision ? `<br><label>Decision Needed</label><p class="highlight">${p.decisionText}</p>` : ''}
+            </div>
+          </div>
+          <div class="ragu-note">
+            <span class="ragu-note-label">RAGU ✎</span>
+            <input type="text" placeholder="Add a note before the call..." value="${p.ragNotes || ''}"
+              onblur="saveNote(${p.id}, this.value)" onclick="event.stopPropagation()">
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderAgenda() {
+    const decisions = projects.filter(p => p.needsDecision);
+    const amber = projects.filter(p => p.rag === 'amber' && !p.needsDecision);
+    const green = projects.filter(p => p.rag === 'green');
+
+    let time = 9 * 60 + 30;
+    let items = [];
+
+    items.push({ time: fmt(time), duration: 5, label: "Opening & Week Summary", sub: "Ragu — overview of RAG distribution", special: true });
+    time += 5;
+    decisions.forEach(p => { items.push({ time: fmt(time), duration: 8, label: p.project, sub: `${p.pm} · ${p.track} · ⚡ ${p.decisionText.substring(0,70)}`, rag: 'red' }); time += 8; });
+    amber.forEach(p => { items.push({ time: fmt(time), duration: 5, label: p.project, sub: `${p.pm} · ${p.track} · ${p.milestone.substring(0,70)}`, rag: 'amber' }); time += 5; });
+    if (green.length) { items.push({ time: fmt(time), duration: 5, label: `Consent Agenda — ${green.length} Green Project${green.length>1?'s':''}`, sub: green.map(p=>p.project).join(', ') + ' · No issues, noted as read', rag: 'green' }); time += 5; }
+    items.push({ time: fmt(time), duration: 5, label: "Wrap-up & Action Items", sub: "Ragu — decisions recap and owner assignments", special: true });
+
+    const total = items.reduce((s, i) => s + i.duration, 0);
+    document.getElementById('agendaTotal').textContent = total;
+    document.getElementById('agendaList').innerHTML = items.length ? items.map(item => `
+      <div class="agenda-item">
+        <div class="agenda-time">${item.time}</div>
+        <div class="rag-dot ${item.rag||''}" style="${item.special?'background:var(--accent);box-shadow:0 0 6px var(--accent)':''}"></div>
+        <div><div class="agenda-project">${item.label}</div><div class="agenda-sub">${item.sub}</div></div>
+        <div class="agenda-mins">${item.duration} min</div>
+      </div>`).join('') : `<div class="empty-state"><div class="icon">📅</div>No updates submitted yet — agenda will auto-build here</div>`;
+  }
+
+  // ── HELPERS ───────────────────────────────────────────────────────────
+  function fmt(mins) {
+    const h = Math.floor(mins/60), m = mins%60;
+    return `${h>12?h-12:h}:${m.toString().padStart(2,'0')} ${h>=12?'PM':'AM'}`;
+  }
+
+  function switchView(view, btn) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('view-' + view).classList.add('active');
+    if (btn) btn.classList.add('active');
+    if (view === 'agenda') renderAgenda();
+  }
+
+  function toggleExpand(id) {
+    document.getElementById('card-'+id)?.classList.toggle('expanded');
+    document.getElementById('detail-'+id)?.classList.toggle('open');
+  }
+
+  function filterProjects(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderProjects(filter);
+  }
+
+  function selectRag(rag, btn) {
+    selectedRag = rag;
+    document.querySelectorAll('.rag-btn').forEach(b => b.classList.remove('selected-red','selected-amber','selected-green'));
+    btn.classList.add('selected-' + rag);
+  }
+
+  function toggleDecision(el) {
+    decisionChecked = !decisionChecked;
+    document.getElementById('decisionBox').classList.toggle('checked', decisionChecked);
+    document.getElementById('decisionDetailGroup').style.display = decisionChecked ? 'block' : 'none';
+  }
+
+  function clearForm() {
+    ['fPM','fProject','fCustomer','fMilestone','fRisk','fAccomplishments','fDecision'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+    document.getElementById('fTrack').value = '';
+    document.querySelectorAll('.rag-btn').forEach(b => b.classList.remove('selected-red','selected-amber','selected-green'));
+    document.getElementById('decisionBox').classList.remove('checked');
+    document.getElementById('decisionDetailGroup').style.display = 'none';
+    selectedRag = ''; decisionChecked = false;
+  }
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type}`;
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 3500);
+  }
+
+  init();
+</script>
+</body>
+</html>
