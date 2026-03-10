@@ -1,43 +1,28 @@
-# Thursday PM Command Center
+# DS Implementation — PM Command Center
 
-A browser-based project status dashboard for DS Implementation weekly PM review calls.
+Browser-based PM intelligence tools for DS Implementation weekly Thursday review calls.
 
-## What It Does
+## 🔗 Live URL
+**https://rajesmad.github.io/pm-command-center/**
 
-- PMs submit weekly RAG status updates before Thursday's call
-- Ragu sees a live consolidated dashboard sorted by priority (Red → Amber → Green)
-- Auto-generates the Thursday call agenda with time allocations
-- All data stored permanently in Google Sheets
+## Tools
 
-## Live Tool
+| Tool | URL | Description |
+|------|-----|-------------|
+| 🧠 Intelligent Risk Engine | `/risk-engine.html` | Phase questionnaire, auto risk scoring, RAG conflict detection |
+| 📊 PM Command Center | `/command-center.html` | Manual PM submissions, dashboard, Google Sheets backend |
 
-**[→ Open PM Command Center](https://YOUR-USERNAME.github.io/pm-command-center/)**
-
-> First-time users: paste the Google Apps Script URL in the banner at the top and click Connect.
-
-## Setup
-
-See the full setup guide in the `docs/` folder or refer to the Word document provided separately.
-
-### Files
+## Files
 
 | File | Purpose |
 |------|---------|
-| `index.html` | The main tool — open this in any browser |
-| `docs/apps-script.gs` | Paste this into Google Apps Script (backend) |
-| `README.md` | This file |
+| `index.html` | Landing page — links to both tools |
+| `risk-engine.html` | Intelligent Risk Engine v2.0 |
+| `command-center.html` | PM Command Center v1.0 |
+| `docs/apps-script.gs` | Google Apps Script backend for Command Center |
 
 ## Stack
-
-- Pure HTML/CSS/JS — no framework, no dependencies
-- Google Apps Script — free serverless backend
-- Google Sheets — permanent data storage
-- GitHub Pages — free static hosting
-
-## Access Levels
-
-| Role | Access |
-|------|--------|
-| PM / End User | Opens the tool URL, submits updates via form |
-| Ragu (Dashboard) | Opens the tool URL, views Dashboard + Agenda tabs |
-| Admin | Google Sheet (data), Apps Script (backend code) |
+- Pure HTML/CSS/JS · No framework · No dependencies
+- Google Apps Script (free serverless backend)
+- Google Sheets (database)
+- GitHub Pages (free hosting)
