@@ -7,40 +7,40 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #08090d;
-  --s1: #0e0f14;
-  --s2: #13141b;
-  --s3: #1a1b24;
-  --border: #23242f;
-  --border2: #2d2e3d;
-  --red: #ff3b3b;
-  --red-s: #ff3b3b18;
-  --red-b: #ff3b3b40;
-  --amber: #f59e0b;
-  --amber-s: #f59e0b15;
-  --amber-b: #f59e0b40;
-  --green: #10b981;
-  --green-s: #10b98115;
-  --green-b: #10b98140;
-  --blue: #3b82f6;
-  --blue-s: #3b82f615;
-  --indigo: #6366f1;
-  --text: #e2e4ef;
-  --text2: #9093a8;
-  --text3: #5a5d72;
-  --accent: #e8c87a;
-  --accent-s: #e8c87a12;
+  --bg: #f4f5f7;
+  --s1: #ffffff;
+  --s2: #f8f9fb;
+  --s3: #eef0f4;
+  --border: #e2e5ec;
+  --border2: #c8cdd8;
+  --red: #dc2626;
+  --red-s: #dc262610;
+  --red-b: #dc262630;
+  --amber: #d97706;
+  --amber-s: #d9770610;
+  --amber-b: #d9770630;
+  --green: #059669;
+  --green-s: #05966910;
+  --green-b: #05966930;
+  --blue: #2563eb;
+  --blue-s: #2563eb10;
+  --indigo: #4f46e5;
+  --text: #111827;
+  --text2: #4b5563;
+  --text3: #9ca3af;
+  --accent: #b45309;
+  --accent-s: #b4530910;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden;}
 
 /* GRID BG */
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;opacity:0.3;pointer-events:none;z-index:0;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(#e2e5ec 1px,transparent 1px),linear-gradient(90deg,#e2e5ec 1px,transparent 1px);background-size:40px 40px;opacity:0.4;pointer-events:none;z-index:0;}
 
 /* HEADER */
-.header{position:sticky;top:0;z-index:200;background:rgba(8,9,13,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;}
+.header{position:sticky;top:0;z-index:200;background:rgba(255,255,255,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;}
 .logo{display:flex;align-items:center;gap:10px;}
-.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),#c8913a);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#08090d;font-weight:500;}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#b45309,#92400e);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#ffffff;font-weight:500;}
 .logo-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;letter-spacing:-0.3px;}
 .logo-tag{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:1px;}
 .nav{display:flex;gap:2px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:3px;}
@@ -216,7 +216,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .score-preview{display:flex;align-items:center;gap:12px;}
 .score-preview-val{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;}
 .score-preview-lbl{font-size:11px;color:var(--text2);}
-.submit-q-btn{background:var(--accent);border:none;border-radius:8px;padding:10px 24px;color:#08090d;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;}
+.submit-q-btn{background:var(--accent);border:none;border-radius:8px;padding:10px 24px;color:#ffffff;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;}
 .submit-q-btn:hover{opacity:.9;transform:translateY(-1px);}
 .submit-q-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
 
