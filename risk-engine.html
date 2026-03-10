@@ -371,10 +371,37 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
           <option value="red">🔴 Red</option>
         </select>
       </div>
-      <div class="q-form-group" style="margin-top:16px">
-        <label class="q-label">Assess Phase</label>
-        <div class="phase-pills" id="phase-pills"></div>
+
+      <div style="border-top:1px solid var(--border);margin:14px 0;"></div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Weekly Update</div>
+
+      <div class="q-form-group">
+        <label class="q-label">Current Milestone / This Week's Focus</label>
+        <input class="q-input" id="q-milestone" placeholder="e.g. IRDW sessions complete, APP1 build started">
       </div>
+      <div class="q-form-group">
+        <label class="q-label">Risks / Blockers</label>
+        <textarea class="q-input" id="q-risks" rows="3" placeholder="What's slowing the project or could derail it?" style="resize:none;"></textarea>
+      </div>
+      <div class="q-form-group">
+        <label class="q-label">Accomplishments This Week</label>
+        <textarea class="q-input" id="q-accomplishments" rows="3" placeholder="Key wins and completions this week..." style="resize:none;"></textarea>
+      </div>
+      <div class="q-form-group">
+        <label class="q-label">Needs Rajesh's Decision or Escalation?</label>
+        <select class="q-select" id="q-needs-decision">
+          <option value="no">No — no action needed</option>
+          <option value="yes">Yes — needs decision on Thursday</option>
+        </select>
+      </div>
+      <div class="q-form-group" id="q-decision-text-wrap" style="display:none;">
+        <label class="q-label">Describe the Decision Needed</label>
+        <textarea class="q-input" id="q-decision-text" rows="3" placeholder="What exactly does Rajesh need to decide or action?" style="resize:none;"></textarea>
+      </div>
+
+      <div style="border-top:1px solid var(--border);margin:14px 0;"></div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Assess Phase</div>
+      <div class="phase-pills" id="phase-pills"></div>
     </div>
 
     <div class="q-panel" id="q-panel">
@@ -649,6 +676,12 @@ function init() {
     renderDashboard();
   }
   buildPhasePills();
+
+  // Toggle decision text field
+  document.getElementById('q-needs-decision').addEventListener('change', function() {
+    document.getElementById('q-decision-text-wrap').style.display =
+      this.value === 'yes' ? 'block' : 'none';
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -744,6 +777,21 @@ function projectRowHTML(p) {
           ${p.needsDecision ? `<p class="risk-text" style="margin-top:6px;font-size:11px">⚡ ${p.decisionText}</p>` : ''}
         </div>
       </div>
+      ${p.milestone || p.risks || p.accomplishments ? `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px;padding:14px;background:var(--s1);border:1px solid var(--border);border-radius:8px;">
+        <div class="detail-block">
+          <label>🎯 Current Milestone</label>
+          <p>${p.milestone || '—'}</p>
+        </div>
+        <div class="detail-block">
+          <label>⚠ Risks / Blockers</label>
+          <p class="${p.risks ? 'risk-text' : ''}">${p.risks || '—'}</p>
+        </div>
+        <div class="detail-block">
+          <label>✅ Accomplishments</label>
+          <p class="ok-text">${p.accomplishments || '—'}</p>
+        </div>
+      </div>` : ''}
       ${p.ragConflict ? `
       <div class="conflict-box">
         <div class="conflict-title">⚠ RAG Conflict Detected</div>
@@ -933,6 +981,11 @@ function submitAssessment(phaseKey) {
   const customer = document.getElementById('q-customer').value.trim();
   const pmRag = document.getElementById('q-pm-rag').value;
   const hasPayroll = document.getElementById('q-payroll').value === 'yes';
+  const milestone = document.getElementById('q-milestone').value.trim();
+  const risks = document.getElementById('q-risks').value.trim();
+  const accomplishments = document.getElementById('q-accomplishments').value.trim();
+  const needsDecision = document.getElementById('q-needs-decision').value === 'yes';
+  const decisionText = needsDecision ? document.getElementById('q-decision-text').value.trim() : '';
 
   if (!project || !pm || !track) {
     showToast('Please fill in project name, PM, and track', 'err');
@@ -977,16 +1030,22 @@ function submitAssessment(phaseKey) {
     existing.hasPayroll = hasPayroll;
     existing.answers = answers;
     existing.submittedAt = timeStr;
+    existing.milestone = milestone;
+    existing.risks = risks;
+    existing.accomplishments = accomplishments;
+    existing.needsDecision = needsDecision;
+    existing.decisionText = decisionText || existing.decisionText;
     saveToSheets(existing).then(rowId => { if (rowId) existing.rowId = rowId; });
   } else {
     const newProj = {
       id: Date.now(), project, pm, track, customer: customer || '—',
       phase: phaseKey, hasPayroll,
       pmRag, systemRag: preview.rag, riskScore: preview.score,
-      needsDecision: generatedFlags.filter(f => f.level === 'high').length >= 2,
-      decisionText: generatedFlags.filter(f=>f.level==='high').slice(0,1).map(f=>f.text).join(''),
+      needsDecision: needsDecision || generatedFlags.filter(f => f.level === 'high').length >= 2,
+      decisionText: decisionText || generatedFlags.filter(f=>f.level==='high').slice(0,1).map(f=>f.text).join(''),
       answers, flags: generatedFlags,
       ragConflict, conflictReason,
+      milestone, risks, accomplishments,
       notes: '', submittedAt: timeStr
     };
     PROJECTS.push(newProj);
