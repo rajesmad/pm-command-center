@@ -277,7 +277,8 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <button class="nav-btn" onclick="switchView('agenda',this)">Thursday Agenda</button>
   </div>
   <div class="header-right">
-    <div class="engine-badge"><div class="pulse"></div>Risk Engine Active</div>
+    <button onclick="loadFromSheets()" style="background:var(--s3);border:1px solid var(--border);color:var(--text2);font-family:'IBM Plex Mono',monospace;font-size:10px;padding:5px 12px;border-radius:6px;cursor:pointer;" title="Refresh from Sheets">⟳ Refresh</button>
+    <div class="engine-badge" id="connectionBadge" onclick="promptForUrl()" style="cursor:pointer;" title="Click to connect Google Sheets"><div class="pulse"></div>Risk Engine Active</div>
   </div>
 </header>
 
@@ -408,6 +409,91 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 <div class="toast" id="toast"></div>
 
 <script>
+// ═══════════════════════════════════════════════════════════════════════
+// BACKEND CONFIG
+// ═══════════════════════════════════════════════════════════════════════
+let APPS_SCRIPT_URL = localStorage.getItem('riskEngineUrl') || '';
+
+function promptForUrl() {
+  const url = prompt(
+    '🔗 Connect to Google Sheets\n\nPaste your Apps Script Web App URL below:\n(Extensions → Apps Script → Deploy → Manage Deployments → Copy URL)',
+    APPS_SCRIPT_URL
+  );
+  if (url && url.startsWith('https://script.google.com')) {
+    APPS_SCRIPT_URL = url.trim();
+    localStorage.setItem('riskEngineUrl', APPS_SCRIPT_URL);
+    showToast('✓ Connected to Google Sheets — loading data...', 'ok');
+    loadFromSheets();
+  } else if (url !== null) {
+    showToast('Invalid URL — must start with https://script.google.com', 'err');
+  }
+}
+
+async function loadFromSheets() {
+  if (!APPS_SCRIPT_URL) return;
+  try {
+    bar(true);
+    const res = await fetch(APPS_SCRIPT_URL + '?action=fetchAssessments');
+    const json = await res.json();
+    if (json.success && json.data.length) {
+      PROJECTS = json.data;
+      renderDashboard();
+      showToast(`✓ Loaded ${json.data.length} project${json.data.length!==1?'s':''} from Google Sheets`, 'ok');
+    }
+    bar(false);
+    updateConnectionBadge();
+  } catch(e) {
+    bar(false);
+    showToast('Could not load from Sheets — working offline', 'err');
+  }
+}
+
+async function saveToSheets(projectData) {
+  if (!APPS_SCRIPT_URL) return null;
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'submitAssessment', ...projectData })
+    });
+    const json = await res.json();
+    return json.rowId || null;
+  } catch(e) {
+    console.warn('Could not save to Sheets:', e);
+    return null;
+  }
+}
+
+async function saveNoteToSheets(rowId, note) {
+  if (!APPS_SCRIPT_URL || !rowId) return;
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveRaguNote', rowId, note })
+    });
+  } catch(e) {}
+}
+
+function bar(on) {
+  const el = document.getElementById('loadingBar');
+  el.className = 'loading-bar' + (on ? ' on' : ' done');
+  if (!on) setTimeout(() => el.className = 'loading-bar', 600);
+}
+
+function updateConnectionBadge() {
+  const badge = document.getElementById('connectionBadge');
+  if (APPS_SCRIPT_URL) {
+    badge.innerHTML = '<div class="pulse"></div>Sheets Connected';
+    badge.style.background = 'var(--green-s)';
+    badge.style.borderColor = 'var(--green-b)';
+    badge.style.color = 'var(--green)';
+  } else {
+    badge.innerHTML = '⚠ Offline Mode';
+    badge.style.background = 'var(--amber-s)';
+    badge.style.borderColor = 'var(--amber-b)';
+    badge.style.color = 'var(--amber)';
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // DATA MODEL
 // ═══════════════════════════════════════════════════════════════════════
@@ -556,7 +642,12 @@ function init() {
   const now = new Date();
   document.getElementById('agenda-title').textContent =
     `Thursday ${now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`;
-  renderDashboard();
+  updateConnectionBadge();
+  if (APPS_SCRIPT_URL) {
+    loadFromSheets();
+  } else {
+    renderDashboard();
+  }
   buildPhasePills();
 }
 
@@ -680,7 +771,10 @@ function toggleRow(id) {
 
 function saveNote(id, val) {
   const p = PROJECTS.find(x => x.id === id);
-  if (p) p.notes = val;
+  if (p) {
+    p.notes = val;
+    saveNoteToSheets(p.rowId, val);
+  }
 }
 
 function filterDash(filter, btn) {
@@ -883,8 +977,9 @@ function submitAssessment(phaseKey) {
     existing.hasPayroll = hasPayroll;
     existing.answers = answers;
     existing.submittedAt = timeStr;
+    saveToSheets(existing).then(rowId => { if (rowId) existing.rowId = rowId; });
   } else {
-    PROJECTS.push({
+    const newProj = {
       id: Date.now(), project, pm, track, customer: customer || '—',
       phase: phaseKey, hasPayroll,
       pmRag, systemRag: preview.rag, riskScore: preview.score,
@@ -893,7 +988,9 @@ function submitAssessment(phaseKey) {
       answers, flags: generatedFlags,
       ragConflict, conflictReason,
       notes: '', submittedAt: timeStr
-    });
+    };
+    PROJECTS.push(newProj);
+    saveToSheets(newProj).then(rowId => { if (rowId) newProj.rowId = rowId; });
   }
 
   renderDashboard();
