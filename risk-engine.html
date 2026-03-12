@@ -829,7 +829,7 @@ body::before {
       </div>
       <div class="q-form-group">
         <label class="q-label">Risks &amp; Items Needing Executive Attention</label>
-        <textarea class="q-input" id="q-risks" rows="3" placeholder="Risks, blockers, or items requiring Rajesh's attention..." style="resize:none;"></textarea>
+        <textarea class="q-input" id="q-risks" rows="3" placeholder="Risks, blockers, or items requiring Ragu's / DS Management attention..." style="resize:none;"></textarea>
       </div>
       <div class="q-form-group">
         <label class="q-label">Accomplishments This Week</label>
@@ -850,59 +850,100 @@ body::before {
       <div class="q-section-divider"><span class="q-section-label">Milestone Dates</span></div>
 
       <!-- MILESTONE DATE TABLE -->
-      <div style="overflow-x:auto;margin-bottom:4px;">
-        <table id="milestone-table" style="width:100%;border-collapse:collapse;font-size:10px;">
-          <thead>
-            <tr style="background:#b45309;">
-              <th style="padding:5px 6px;text-align:left;color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:9px;border:1px solid #92400e;white-space:nowrap;">DATE</th>
-              <th style="padding:5px 4px;text-align:center;color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:9px;border:1px solid #92400e;">APP 0</th>
-              <th style="padding:5px 4px;text-align:center;color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:9px;border:1px solid #92400e;">IRDW</th>
-              <th style="padding:5px 4px;text-align:center;color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:9px;border:1px solid #92400e;">APP 1</th>
-              <th style="padding:5px 4px;text-align:center;color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:9px;border:1px solid #92400e;">APP 2</th>
-              <th style="padding:5px 4px;text-align:center;color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:9px;border:1px solid #92400e;">SIT</th>
-              <th style="padding:5px 4px;text-align:center;color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:9px;border:1px solid #92400e;">TTT</th>
-              <th style="padding:5px 4px;text-align:center;color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:9px;border:1px solid #92400e;white-space:nowrap;">PAY PAR</th>
-              <th style="padding:5px 4px;text-align:center;color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:9px;border:1px solid #92400e;">UAT</th>
-              <th style="padding:5px 4px;text-align:center;color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:9px;border:1px solid #92400e;white-space:nowrap;">GO LIVE</th>
-            </tr>
-          </thead>
-          <tbody id="milestone-tbody"></tbody>
-        </table>
-      </div>
+      <div id="milestone-wrap"></div>
       <script>
       (function(){
-        const milestoneRows = [
-          {label:'PLANNED START',    id:'ms-ps'},
-          {label:'PLANNED COMPLETION',id:'ms-pc'},
-          {label:'ACTUAL START',     id:'ms-as'},
-          {label:'ACTUAL COMPLETION',id:'ms-ac'},
+        const cols     = ['APP 0','IRDW','APP 1','APP 2','SIT','TTT','PAY PAR','UAT','GO LIVE'];
+        const colKeys  = ['app0','irdw','app1','app2','sit','ttt','paypara','uat','golive'];
+        const rowDefs  = [
+          {label:'Planned Start',     id:'ms-ps'},
+          {label:'Planned Completion',id:'ms-pc'},
+          {label:'Actual Start',      id:'ms-as'},
+          {label:'Actual Completion', id:'ms-ac'},
         ];
-        const cols = ['app0','irdw','app1','app2','sit','ttt','paypara','uat','golive'];
-        const tbody = document.getElementById('milestone-tbody');
-        milestoneRows.forEach((row,ri) => {
-          const tr = document.createElement('tr');
-          tr.style.background = ri%2===0?'#ffffff':'#f8f9fb';
-          const td0 = document.createElement('td');
-          td0.style.cssText='padding:3px 6px;border:1px solid #e2e5ec;font-family:IBM Plex Mono,monospace;font-size:8px;color:#4b5563;white-space:nowrap;font-weight:600;';
-          td0.textContent = row.label;
-          tr.appendChild(td0);
-          cols.forEach(col => {
-            const td = document.createElement('td');
-            td.style.cssText='padding:1px;border:1px solid #e2e5ec;position:relative;';
-            // Native date picker — displays as DD-MMM-YYYY via JS formatting
-            const inp = document.createElement('input');
-            inp.type='date';
-            inp.id=`${row.id}-${col}`;
-            inp.style.cssText='width:100%;border:none;background:transparent;font-size:8px;font-family:IBM Plex Mono,monospace;color:#111827;text-align:center;padding:2px 1px;outline:none;cursor:pointer;min-width:72px;';
-            inp.title='Click to pick date';
-            td.appendChild(inp);
-            tr.appendChild(td);
+        const rowColors = ['#dbeafe','#fef3c7','#dcfce7','#f3e8ff'];
+        const rowText   = ['#1d4ed8','#92400e','#166534','#6b21a8'];
+
+        function toDisplayDate(val) {
+          if (!val) return '';
+          const d = new Date(val + 'T00:00:00');
+          if (isNaN(d)) return val;
+          return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).replace(/ /g,'-').toUpperCase();
+        }
+
+        const wrap = document.getElementById('milestone-wrap');
+
+        cols.forEach((col, ci) => {
+          // Milestone card
+          const card = document.createElement('div');
+          card.style.cssText = 'background:var(--s2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;';
+
+          // Card header
+          const hdr = document.createElement('div');
+          hdr.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--accent);cursor:pointer;user-select:none;`;
+          hdr.innerHTML = `
+            <span style="font-family:DM Mono,monospace;font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;">${col}</span>
+            <span class="ms-toggle-${ci}" style="font-size:11px;color:rgba(255,255,255,.7);transition:transform .2s;">▼</span>`;
+
+          // Card body
+          const body = document.createElement('div');
+          body.id = `ms-body-${ci}`;
+          body.style.cssText = 'display:none;padding:10px 12px;';
+
+          // Toggle
+          hdr.addEventListener('click', () => {
+            const open = body.style.display !== 'none';
+            body.style.display = open ? 'none' : 'block';
+            hdr.querySelector(`.ms-toggle-${ci}`).style.transform = open ? '' : 'rotate(180deg)';
           });
-          tbody.appendChild(tr);
+
+          // Date rows inside body
+          rowDefs.forEach((row, ri) => {
+            const rowWrap = document.createElement('div');
+            rowWrap.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;';
+
+            // Label badge
+            const lbl = document.createElement('div');
+            lbl.style.cssText = `font-family:DM Mono,monospace;font-size:9px;font-weight:600;padding:3px 8px;border-radius:4px;white-space:nowrap;background:${rowColors[ri]};color:${rowText[ri]};min-width:130px;`;
+            lbl.textContent = row.label;
+
+            // Date input wrapper
+            const inputWrap = document.createElement('div');
+            inputWrap.style.cssText = 'display:flex;align-items:center;gap:6px;flex:1;';
+
+            const inp = document.createElement('input');
+            inp.type = 'date';
+            inp.id = `${row.id}-${colKeys[ci]}`;
+            inp.style.cssText = 'flex:1;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-family:DM Mono,monospace;font-size:10px;color:var(--text);background:var(--s1);outline:none;cursor:pointer;';
+
+            // Display span shows DD-MMM-YYYY
+            const display = document.createElement('span');
+            display.style.cssText = 'font-family:DM Mono,monospace;font-size:10px;color:var(--accent);font-weight:600;min-width:90px;';
+            display.textContent = '';
+
+            inp.addEventListener('change', function() {
+              display.textContent = toDisplayDate(this.value);
+            });
+
+            inputWrap.appendChild(inp);
+            inputWrap.appendChild(display);
+
+            rowWrap.appendChild(lbl);
+            rowWrap.appendChild(inputWrap);
+            body.appendChild(rowWrap);
+          });
+
+          card.appendChild(hdr);
+          card.appendChild(body);
+          wrap.appendChild(card);
         });
+
+        // Expand first card by default
+        document.getElementById('ms-body-0').style.display = 'block';
+        document.querySelector('.ms-toggle-0').style.transform = 'rotate(180deg)';
       })();
       </script>
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--text3);margin-top:4px;">📅 Click any cell to open date picker</div>
+      <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text3);margin-top:2px;margin-bottom:8px;">📅 Click a milestone to expand · selected dates shown as DD-MMM-YYYY</div>
 
       <!-- SURVEYS SECTION -->
       <div class="q-section-divider"><span class="q-section-label">Surveys</span></div>
